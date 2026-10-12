@@ -1,0 +1,540 @@
+{
+  "info": {
+    "name": "Live Coding Interview Room API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000"
+    },
+    {
+      "key": "roomId",
+      "value": ""
+    },
+    {
+      "key": "hostToken",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health check",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "health"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\",()=>pm.response.to.have.status(200));",
+              "pm.test(\"ok true\",()=>pm.expect(pm.response.json().ok).to.eql(true));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Create room",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/rooms",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "rooms"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Frontend Round 1\",\n  \"meetLink\": \"https://meet.google.com/abc-defg-hij\",\n  \"language\": \"javascript\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"201 Created\",()=>pm.response.to.have.status(201));",
+              "const j=pm.response.json();",
+              "pm.test(\"has roomId, hostToken, link\",()=>{pm.expect(j.roomId).to.match(/^[a-z0-9]{3}-[a-z0-9]{4}-[a-z0-9]{3}$/);pm.expect(j.hostToken).to.have.lengthOf.at.least(32);pm.expect(j.link).to.include(j.roomId);});",
+              "pm.collectionVariables.set(\"roomId\",j.roomId);",
+              "pm.collectionVariables.set(\"hostToken\",j.hostToken);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Create room - invalid meet link (400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/rooms",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "rooms"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"meetLink\": \"javascript:alert(1)\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"400\",()=>pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Get room",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/rooms/{{roomId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "rooms",
+            "{{roomId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200\",()=>pm.response.to.have.status(200));",
+              "pm.test(\"host token not leaked\",()=>pm.expect(pm.response.json().hostToken).to.be.undefined);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Get unknown room (404)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/rooms/zzz-zzzz-zzz",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "rooms",
+            "zzz-zzzz-zzz"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"404\",()=>pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. List languages",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/languages",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "languages"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 + python present\",()=>{pm.response.to.have.status(200);pm.expect(pm.response.json().map(l=>l.key)).to.include(\"python\");});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Execute code",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/execute",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "execute"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"roomId\": \"{{roomId}}\",\n  \"language\": \"python\",\n  \"code\": \"print(input())\",\n  \"stdin\": \"hello\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200\",()=>pm.response.to.have.status(200));",
+              "const j=pm.response.json();",
+              "pm.test(\"Accepted with stdout\",()=>{pm.expect(j.status).to.eql(\"Accepted\");pm.expect(j.stdout.trim()).to.eql(\"hello\");});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Execute - empty code (400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/execute",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "execute"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"language\": \"python\",\n  \"code\": \"   \"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"400\",()=>pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Execute - unsupported language (400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/execute",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "execute"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"language\": \"cobol\",\n  \"code\": \"x\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"400\",()=>pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Feedback without token (401)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/feedback",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "feedback"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"roomId\": \"{{roomId}}\",\n  \"candidateName\": \"Asha\",\n  \"interviewerName\": \"Ravi\",\n  \"ratings\": {\n    \"problemSolving\": 4,\n    \"codeQuality\": 3,\n    \"communication\": 5,\n    \"technical\": 4\n  },\n  \"recommendation\": \"hire\",\n  \"comments\": \"Good communication.\",\n  \"finalCode\": \"console.log(1)\",\n  \"language\": \"javascript\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"401\",()=>pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Feedback invalid rating (400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-host-token",
+            "value": "{{hostToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/feedback",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "feedback"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"roomId\": \"{{roomId}}\",\n  \"candidateName\": \"Asha\",\n  \"interviewerName\": \"Ravi\",\n  \"ratings\": {\n    \"problemSolving\": 4,\n    \"codeQuality\": 3,\n    \"communication\": 5,\n    \"technical\": 9\n  },\n  \"recommendation\": \"hire\",\n  \"comments\": \"Good communication.\",\n  \"finalCode\": \"console.log(1)\",\n  \"language\": \"javascript\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"400\",()=>pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Save feedback",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-host-token",
+            "value": "{{hostToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/feedback",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "feedback"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"roomId\": \"{{roomId}}\",\n  \"candidateName\": \"Asha\",\n  \"interviewerName\": \"Ravi\",\n  \"ratings\": {\n    \"problemSolving\": 4,\n    \"codeQuality\": 3,\n    \"communication\": 5,\n    \"technical\": 4\n  },\n  \"recommendation\": \"hire\",\n  \"comments\": \"Good communication.\",\n  \"finalCode\": \"console.log(1)\",\n  \"language\": \"javascript\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"201\",()=>pm.response.to.have.status(201));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. Get feedback (host)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-host-token",
+            "value": "{{hostToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/feedback/{{roomId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "feedback",
+            "{{roomId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 + 1 entry\",()=>{pm.response.to.have.status(200);pm.expect(pm.response.json().length).to.be.at.least(1);});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. Room is ended after feedback",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/rooms/{{roomId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "rooms",
+            "{{roomId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status ended\",()=>pm.expect(pm.response.json().status).to.eql(\"ended\"));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
